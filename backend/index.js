@@ -1,93 +1,82 @@
-const express = require("express");
-const { MongoClient, ObjectId } = require("mongodb");
+const express = require('express');
+const { MongoClient, ObjectId } = require('mongodb');
 const cors = require("cors");
 
-// localhost ou 127.0.0.1
-// const DB_URL = "mongodb://127.0.0.1:27017";
-const DB_URL =
-  "mongodb+srv://admin:fsdLuHLFo4KwOZ7N@cluster0.bndngam.mongodb.net";
-const DB_NAME = "ocean-bancodados-09-02-2023";
+//const DB_URL = 'mongodb://127.0.0.1:27017';
+const DB_URL = 'mongodb+srv://admin:CbZYDqdxpo0DO1iE@cluster0.0szb2uc.mongodb.net';
+const DB_NAME = 'ocean-jornada-fullstack-09-02-2023';
 
+// conexao com o banco de dados
 async function main() {
-  // Conexão com o banco de dados
-  console.log("Conectando com o banco de dados...");
-  const client = await MongoClient.connect(DB_URL);
-  const db = client.db(DB_NAME);
-  const collection = db.collection("itens");
-  console.log("Banco de dados conectado com sucesso!");
+    console.log("Conectando ao banco de dados");
+    const client = await MongoClient.connect(DB_URL);
+    const db = client.db(DB_NAME);
+    const collection = db.collection('items');
+    console.log("Banco de Dados conectado");
 
-  const app = express();
+    const app = express();
 
-  // Habilita o CORS
-  app.use(cors());
+    app.use(cors());
+    //o que vier no body da requiscao, esta em json
+    app.use(express.json());
 
-  // O que vier no body da requisição, está em JSON
-  app.use(express.json());
+    // endpoint do helloworld
+    app.get('/', (req, res) => {
+        res.send('Hello World ');
+    });
 
-  // Endpoint / -> Hello World
-  app.get("/", function (req, res) {
-    res.send("Hello World");
-  });
+    // endpoint do ola mundo
+    app.get('/oi', (req, res) => {
+        res.send('Olá Mundo');
+    });
 
-  // Endpoint /oi -> Olá, mundo!
-  app.get("/oi", function (req, res) {
-    res.send("Olá, mundo!");
-  });
+    // Lista de infos
+    const itens = ["Banana", "Maca", "Uva"];
 
-  // Lista de informações
-  const itens = ["Rick Sanchez", "Morty Smith", "Summer Smith"];
-  //              0               1              2
 
-  // CRUD -> Lista de informações
+    //endpoint de Read All -> [GET] /item
+    app.get('/item', async (req, res) => {
+        const documentos = await collection.find().toArray();
+        res.send(documentos);
+    });
 
-  // Endpoint Read All -> [GET] /item
-  app.get("/item", async function (req, res) {
-    const documentos = await collection.find().toArray();
-    res.send(documentos);
-  });
+    //endpoint read single by ID -> [GET] /item/:id
+    app.get('/item/:id', async (req, res) => {
+        const id = req.params.id;
+        const item = await collection.findOne({ _id: new ObjectId(id) });
+        res.send(item);
+    });
 
-  // Endpoint Read Single by ID -> [GET] /item/:id
-  app.get("/item/:id", async function (req, res) {
-    const id = req.params.id;
-    const item = await collection.findOne({ _id: new ObjectId(id) });
-    res.send(item);
-  });
+    //endpoint create -> [POST] /item
+    app.post('/item', async (req, res) => {
+        // console.log(req.body);
+        const item = req.body;
+        await collection.insertOne(item);
+        res.send(item);
+    });
 
-  // Endpoint Create -> [POST] /item
-  app.post("/item", async function (req, res) {
-    // console.log(req.body);
-    const item = req.body;
-    await collection.insertOne(item);
-    res.send(item);
-  });
+    // endpoint update -> [PUT] /item/:id
+    app.put('/item/:id', async (req, res) => {
+        const id = req.params.id;
+        const body = req.body;
+        await collection.updateOne({ _id: new ObjectId(id) }, { $set: body });
+        res.send(body);
+    });
 
-  // Endpoint Update -> [PUT] /item/:id
-  app.put("/item/:id", async function (req, res) {
-    const id = req.params.id;
-    const body = req.body;
+    // endpoint delete -> [DELETE] /item/:id
+    app.delete('/item/:id', async (req, res) => {
+        const id = req.params.id;
+        await collection.deleteOne({ _id: new ObjectId(id) });
+        res.send({ message: "Item removido com sucesso" });
+    });
 
-    // console.log(id, body);
-
-    await collection.updateOne({ _id: new ObjectId(id) }, { $set: body });
-
-    res.send(body);
-  });
-
-  // Endpoint Delete -> [DELETE] /item/:id
-  // Exercício:
-  // - pesquisar sobre a operação de remover itens
-  // - implementar o endpoint de delete
-  // - realizar a operação de excluir item
-
-  app.delete("/item/:id", async function (req, res) {
-    const id = req.params.id;
-
-    await collection.deleteOne({ _id: new ObjectId(id) });
-
-    res.send("Registro removido com sucesso!");
-  });
-
-  app.listen(3000);
+    //configurando porta
+    const port = process.env.PORT || 3000;
+    app.listen(port, function () {
+        console.log("Servidor rodando na porta: " + port);
+    });
 }
+
+
 
 main();
